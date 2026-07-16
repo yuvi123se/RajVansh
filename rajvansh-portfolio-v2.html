@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rajvansh — Event Host &amp; Artist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&family=Cormorant+Garamond:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void: #0a0710;
+    --void2: #120b1c;
+    --card: rgba(255,255,255,0.035);
+    --card-hover: rgba(255,255,255,0.06);
+    --line: rgba(255,255,255,0.11);
+    --chrome: #f4f1fa;
+    --muted: #9b90b3;
+    --violet: #9b4dff;
+    --violet-deep: #4a1f8f;
+    --magenta: #ff1f7a;
+    --crimson: #c3134e;
+    --gold: #f2b64d;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    background: var(--void);
+    color: var(--chrome);
+    font-family:'Manrope', sans-serif;
+    line-height:1.6;
+    overflow-x:hidden;
+    position:relative;
+  }
+  ::selection{ background:var(--violet); color:#fff; }
+
+  /* grain */
+  .grain{
+    position:fixed; inset:0; z-index:3; pointer-events:none;
+    opacity:0.05; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ambient spotlight field */
+  .stage{
+    position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+    background:
+      radial-gradient(ellipse 65% 55% at 50% -8%, rgba(155,77,255,0.30), transparent 62%),
+      radial-gradient(ellipse 50% 42% at 88% 12%, rgba(255,31,122,0.20), transparent 62%),
+      radial-gradient(ellipse 55% 48% at 8% 75%, rgba(195,19,78,0.16), transparent 62%),
+      radial-gradient(ellipse 40% 35% at 50% 100%, rgba(242,182,77,0.08), transparent 60%),
+      var(--void);
+  }
+  .stage::after{
+    content:""; position:absolute; inset:0;
+    background:radial-gradient(ellipse 70% 65% at 50% 45%, transparent 40%, rgba(5,3,9,0.55) 100%);
+  }
+  .beam{
+    position:absolute; top:-20%; left:50%;
+    width:140vw; height:140vh;
+    transform:translateX(-50%);
+    background: conic-gradient(from 0deg at 50% 0%,
+      transparent 0deg, rgba(155,77,255,0.16) 8deg, transparent 20deg,
+      transparent 160deg, rgba(255,31,122,0.13) 172deg, transparent 184deg,
+      transparent 340deg);
+    animation: sweep 46s linear infinite;
+    mix-blend-mode:screen;
+  }
+  @keyframes sweep{ 100%{ transform:translateX(-50%) rotate(360deg); } }
+  .glow-follow{
+    position:fixed; z-index:1; width:640px; height:640px; border-radius:50%;
+    background:radial-gradient(circle, rgba(195,19,78,0.20) 0%, rgba(155,77,255,0.14) 45%, transparent 72%);
+    pointer-events:none; transform:translate(-50%,-50%);
+    transition:left 0.6s ease-out, top 0.6s ease-out;
+    filter:blur(14px);
+  }
+
+  section, header.hero, footer{ position:relative; z-index:2; }
+
+  .reveal{ opacity:0; transform:translateY(26px); transition:opacity 1s cubic-bezier(.2,.7,.2,1), transform 1s cubic-bezier(.2,.7,.2,1); }
+  .reveal.in{ opacity:1; transform:translateY(0); }
+  @media (prefers-reduced-motion: reduce){ .reveal{ opacity:1; transform:none; transition:none; } .beam{ animation:none; } }
+
+  .display{ font-family:'Syne', sans-serif; }
+  .mono{ font-family:'Space Mono', monospace; }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height:100svh;
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
+    text-align:center; padding:8vh 6vw 10vh; border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'Space Mono', monospace; font-size:0.7rem; letter-spacing:0.42em;
+    color:var(--muted); margin-bottom:2.2rem; text-transform:uppercase;
+  }
+  .eyebrow::before{ content:"◆ "; color:var(--gold); }
+  .hero h1{
+    font-family:'Syne', sans-serif; font-weight:800;
+    font-size:clamp(2.6rem, 12vw, 9rem); line-height:0.92; letter-spacing:-0.01em;
+    max-width:100%; white-space:nowrap;
+    background:linear-gradient(115deg, #ffffff 0%, #ffffff 28%, #e3b8ff 42%, #ff3d8f 58%, #ffb84d 76%, #ffffff 100%);
+    background-size:220% 100%;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation: chromeShift 8s ease-in-out infinite;
+    filter: drop-shadow(0 0 70px rgba(195,19,78,0.35));
+  }
+  @keyframes chromeShift{ 0%,100%{ background-position:0% 50%; } 50%{ background-position:100% 50%; } }
+  .hero-role{
+    margin-top:1.6rem; font-size:clamp(1rem, 2vw, 1.2rem); color:var(--muted);
+    display:flex; gap:0.7em; flex-wrap:wrap; justify-content:center;
+  }
+  .hero-role span:not(.sep){ color:var(--chrome); font-weight:600; }
+  .sep{ color:var(--violet); }
+  .hero-lead{ max-width:46ch; margin:2rem auto 0; color:#c9bcd9; font-family:'Cormorant Garamond', serif; font-style:italic; font-weight:500; font-size:1.35rem; letter-spacing:0.01em; }
+
+  .badge{
+    margin-top:3rem; display:inline-flex; align-items:center; gap:0.7rem;
+    padding:0.75rem 1.6rem; border-radius:999px;
+    border:1px solid rgba(242,182,77,0.4);
+    background:linear-gradient(135deg, rgba(242,182,77,0.12), rgba(195,19,78,0.10));
+    box-shadow:0 0 50px rgba(195,19,78,0.14);
+  }
+  .badge-dot{ width:7px; height:7px; border-radius:50%; background:var(--gold); box-shadow:0 0 10px var(--gold); animation:pulseDot 2s ease-in-out infinite; }
+  @keyframes pulseDot{ 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
+  .badge-text{ font-family:'Space Mono', monospace; font-size:0.72rem; letter-spacing:0.16em; color:#ffe1ac; }
+
+  .scroll-cue{ margin-top:5rem; width:1px; height:50px; background:linear-gradient(var(--muted), transparent); position:relative; }
+  .scroll-cue::after{ content:""; position:absolute; top:0; left:-2px; width:5px; height:5px; border-radius:50%; background:var(--gold); animation:cueMove 2.4s ease-in-out infinite; }
+  @keyframes cueMove{ 0%{ top:0; opacity:1; } 100%{ top:50px; opacity:0; } }
+
+  /* ---------- TICKER ---------- */
+  .ticker-wrap{ border-bottom:1px solid var(--line); overflow:hidden; padding:1.6rem 0; background:rgba(255,255,255,0.015); }
+  .ticker{ display:flex; width:max-content; animation:tickerMove 32s linear infinite; }
+  .ticker:hover{ animation-play-state:paused; }
+  @keyframes tickerMove{ 0%{ transform:translateX(0); } 100%{ transform:translateX(-50%); } }
+  .ticker-item{ display:flex; align-items:baseline; gap:0.7rem; padding:0 2.6rem; white-space:nowrap; }
+  .ticker-num{ font-family:'Syne', sans-serif; font-weight:700; font-size:1.5rem; color:var(--chrome); }
+  .ticker-label{ font-family:'Space Mono', monospace; font-size:0.68rem; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase; }
+  .ticker-item .dot{ color:var(--violet); }
+
+  /* ---------- SECTION SHELL ---------- */
+  section.block{ max-width:1120px; margin:0 auto; padding:clamp(3.5rem, 9vw, 7rem) 6vw; border-bottom:1px solid var(--line); }
+  .tag{
+    font-family:'Space Mono', monospace; font-size:0.7rem; letter-spacing:0.32em;
+    color:var(--gold); margin-bottom:1.1rem; text-transform:uppercase;
+  }
+  h2.display{ font-weight:700; font-size:clamp(2.1rem, 5vw, 3.2rem); margin-bottom:1.8rem; letter-spacing:-0.01em; }
+  .lead{ font-size:1.08rem; color:#c9c2dd; max-width:66ch; }
+  .lead b{ color:var(--chrome); font-weight:700; }
+
+  /* ---------- SKILLS ---------- */
+  .grid-skills{ margin-top:3rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(230px, 1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:16px; overflow:hidden; }
+  .skill{ background:var(--void2); padding:2rem 1.7rem; transition:background 0.35s ease; }
+  .skill:hover{ background:var(--card-hover); }
+  .skill .k{ font-family:'Space Mono', monospace; font-size:0.66rem; color:var(--violet); letter-spacing:0.14em; text-transform:uppercase; }
+  .skill h3{ font-family:'Syne', sans-serif; font-size:1.3rem; font-weight:700; margin-top:0.5rem; }
+  .skill p{ margin-top:0.6rem; font-size:0.9rem; color:var(--muted); }
+
+  /* ---------- EXPERIENCE TIMELINE ---------- */
+  .timeline{ margin-top:3rem; display:flex; flex-direction:column; }
+  .tl-row{ display:grid; grid-template-columns:150px 1fr; gap:2rem; padding:2.1rem 0; border-top:1px solid var(--line); align-items:start; }
+  .tl-row:last-child{ border-bottom:1px solid var(--line); }
+  .tl-scale{ font-family:'Syne', sans-serif; font-weight:700; font-size:1.7rem; color:var(--gold); }
+  .tl-scale small{ display:block; font-family:'Space Mono', monospace; font-size:0.6rem; color:var(--muted); font-weight:400; letter-spacing:0.1em; margin-top:0.3rem; }
+  .tl-body h3{ font-family:'Syne', sans-serif; font-size:1.4rem; font-weight:700; }
+  .tl-body p{ color:var(--muted); font-size:0.92rem; margin-top:0.4rem; max-width:60ch; }
+  .role-pill{ display:inline-block; margin-top:0.7rem; font-family:'Space Mono', monospace; font-size:0.65rem; letter-spacing:0.1em; color:#d9caff; border:1px solid rgba(143,92,255,0.4); padding:0.3rem 0.8rem; border-radius:999px; background:rgba(143,92,255,0.08); }
+
+  /* ---------- MUSIC ---------- */
+  .music-wrap{ margin-top:3rem; display:grid; grid-template-columns:1fr 1fr; gap:2rem; }
+  .music-card{ border:1px solid var(--line); background:var(--card); border-radius:16px; padding:2.2rem; position:relative; overflow:hidden; }
+  .music-card::after{ content:""; position:absolute; right:-40px; top:-40px; width:150px; height:150px; background:radial-gradient(circle, rgba(255,47,138,0.2), transparent 70%); }
+  .music-card h3{ font-family:'Syne', sans-serif; font-size:1.35rem; font-weight:700; color:var(--magenta); }
+  .music-card p{ margin-top:0.7rem; color:var(--muted); font-size:0.92rem; }
+
+  /* ---------- PLANS (VIP cards) ---------- */
+  .plans-grid{ margin-top:3rem; display:grid; grid-template-columns:repeat(auto-fit, minmax(255px, 1fr)); gap:1.6rem; }
+  .plan-card{
+    background:linear-gradient(165deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    border:1px solid var(--line); border-radius:20px; padding:2.2rem 1.8rem 2rem;
+    display:flex; flex-direction:column; position:relative; overflow:hidden;
+    transition:transform 0.45s cubic-bezier(.2,.8,.2,1), border-color 0.4s ease, box-shadow 0.4s ease;
+  }
+  .plan-card::before{
+    content:""; position:absolute; inset:0; border-radius:20px; padding:1px;
+    background:linear-gradient(140deg, var(--accent, var(--violet)), transparent 40%, transparent 60%, var(--accent, var(--violet)));
+    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude;
+    opacity:0.5; pointer-events:none;
+  }
+  .plan-card:hover{ transform:translateY(-8px); }
+  .plan-card .sheen{
+    content:""; position:absolute; top:0; left:-60%; width:40%; height:100%;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,0.14), transparent);
+    transform:skewX(-18deg); transition:left 0.8s ease; pointer-events:none;
+  }
+  .plan-card:hover .sheen{ left:120%; }
+  .plan-tier{ font-family:'Space Mono', monospace; font-size:0.65rem; letter-spacing:0.2em; color:var(--accent, var(--violet)); text-transform:uppercase; }
+  .plan-card h3{ font-family:'Syne', sans-serif; font-weight:700; font-size:1.55rem; margin-top:0.5rem; }
+  .plan-card .plan-price{ margin-top:auto; padding-top:1.8rem; font-family:'Syne', sans-serif; font-weight:700; font-size:2.1rem; color:var(--accent, var(--violet)); }
+  .plan-card .plan-price small{ display:block; font-family:'Space Mono', monospace; font-size:0.6rem; font-weight:400; letter-spacing:0.12em; color:var(--muted); margin-top:0.3rem; }
+  .plan-list{ list-style:none; margin-top:1.4rem; display:flex; flex-direction:column; gap:0.65rem; flex:1; }
+  .plan-list li{ font-size:0.85rem; color:#d5cfe6; padding-left:1.2rem; position:relative; line-height:1.45; }
+  .plan-list li::before{ content:"—"; position:absolute; left:0; top:0; color:var(--accent, var(--violet)); }
+  .plan-list li.highlight{ color:var(--gold); }
+
+  .plan-core{ --accent:#8f5cff; }
+  .plan-quantum{ --accent:#c478ff; }
+  .plan-omega{ --accent:#f2b64d; }
+  .plan-legendary{ --accent:#ff2f8a; background:linear-gradient(165deg, rgba(255,47,138,0.07), rgba(255,255,255,0.01)); }
+  .plan-legendary:hover{ box-shadow:0 26px 50px rgba(255,47,138,0.16); }
+  .plan-core:hover{ box-shadow:0 20px 42px rgba(143,92,255,0.14); }
+  .plan-quantum:hover{ box-shadow:0 20px 42px rgba(196,120,255,0.14); }
+  .plan-omega:hover{ box-shadow:0 20px 42px rgba(242,182,77,0.16); }
+
+  .plan-note{ margin-top:1.6rem; font-size:0.8rem; color:var(--muted); }
+
+  /* ---------- CTA ---------- */
+  .cta{ text-align:center; padding:clamp(3.5rem, 9vw, 7rem) 6vw clamp(4rem, 10vw, 8rem); }
+  .cta h2{ font-size:clamp(2.2rem, 6vw, 3.6rem); font-weight:700; }
+  .cta p{ color:var(--muted); margin-top:1.1rem; }
+  .cta-row{ margin-top:2.6rem; display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
+  .btn{
+    font-family:'Space Mono', monospace; font-size:0.78rem; letter-spacing:0.08em;
+    padding:1.05rem 2.2rem; border-radius:999px; text-decoration:none; border:1px solid transparent;
+    transition:transform 0.4s cubic-bezier(.2,.8,.2,1), box-shadow 0.4s ease;
+  }
+  .btn:hover{ transform:translateY(-3px); }
+  .btn-primary{
+    background:linear-gradient(120deg, var(--gold), #ffe1ac, var(--crimson), var(--gold));
+    background-size:280% 100%;
+    color:#241405; font-weight:700;
+    box-shadow:0 0 50px rgba(195,19,78,0.3);
+  }
+  .btn-primary:hover{ box-shadow:0 18px 46px rgba(195,19,78,0.4); background-position:100% 0; }
+
+  footer{ text-align:center; padding:2.4rem; font-family:'Space Mono', monospace; font-size:0.68rem; color:var(--muted); letter-spacing:0.1em; }
+
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width:900px){
+    .music-wrap{ grid-template-columns:1fr; }
+    .grid-skills{ grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); }
+    .hero{ padding:10vh 7vw 8vh; }
+  }
+
+  @media (max-width:640px){
+    .hero{ padding:9vh 6vw 6vh; min-height:92svh; }
+    .hero h1{ font-size:clamp(2.2rem, 15vw, 9rem); }
+    .eyebrow{ letter-spacing:0.3em; font-size:0.62rem; margin-bottom:1.6rem; }
+    .hero-lead{ font-size:1.15rem; max-width:32ch; }
+    .hero-role{ gap:0.5em 0.6em; font-size:0.92rem; }
+    .badge{ margin-top:2.2rem; padding:0.6rem 1.2rem; }
+    .badge-text{ font-size:0.62rem; letter-spacing:0.1em; }
+    .scroll-cue{ margin-top:3rem; }
+
+    .ticker-item{ padding:0 1.5rem; }
+    .ticker-num{ font-size:1.15rem; }
+    .ticker-label{ font-size:0.6rem; }
+
+    section.block{ padding-left:6.5vw; padding-right:6.5vw; }
+    h2.display{ font-size:clamp(1.7rem, 8vw, 2.4rem); }
+    .lead{ font-size:1rem; }
+
+    .grid-skills{ grid-template-columns:1fr 1fr; border-radius:14px; }
+    .skill{ padding:1.5rem 1.2rem; }
+    .skill h3{ font-size:1.12rem; }
+
+    .tl-row{ grid-template-columns:1fr; gap:0.4rem; padding:1.6rem 0; }
+    .tl-scale{ font-size:1.3rem; }
+    .tl-scale small{ display:inline; margin-left:0.5rem; }
+    .tl-body h3{ font-size:1.2rem; }
+
+    .music-wrap{ grid-template-columns:1fr; gap:1.2rem; }
+    .music-card{ padding:1.7rem; }
+
+    .plans-grid{ grid-template-columns:1fr; gap:1.2rem; }
+    .plan-card{ padding:1.9rem 1.5rem 1.7rem; }
+    .plan-card .plan-price{ font-size:1.8rem; }
+
+    .cta h2{ font-size:clamp(1.8rem, 9vw, 2.6rem); }
+    .btn{ padding:0.95rem 1.6rem; font-size:0.7rem; width:100%; text-align:center; }
+    .cta-row{ width:100%; }
+
+    .glow-follow{ display:none; }
+  }
+
+  @media (max-width:420px){
+    .grid-skills{ grid-template-columns:1fr; }
+    .hero-lead{ max-width:26ch; font-size:1.05rem; }
+    .ticker-item{ padding:0 1.1rem; }
+    .hero h1{ font-size:clamp(2.2rem, 14vw, 9rem); }
+  }
+
+  @media (hover:none){
+    .plan-card:hover{ transform:none; }
+    .btn:hover{ transform:none; }
+  }
+
+  @media (min-width:1400px){
+    section.block, .cta{ max-width:1240px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="stage"><div class="beam"></div></div>
+  <div class="grain"></div>
+  <div class="glow-follow" id="glow"></div>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="eyebrow">EVENT HOST &amp; ARTIST</div>
+    <h1 class="display">RAJVANSH</h1>
+    <div class="hero-role">
+      <span>Community Owner</span><span class="sep">/</span>
+      <span>Live Host</span><span class="sep">/</span>
+      <span>Multi-Instrumentalist</span><span class="sep">/</span>
+      <span>Songwriter</span>
+    </div>
+    <p class="hero-lead">Runs the room, writes the song. Founder of SkyLine Community and the host behind some of the biggest desi Discord stages around.</p>
+    <div class="badge">
+      <span class="badge-dot"></span>
+      <span class="badge-text">OWNER · SKYLINE COMMUNITY · .GG/TEAMSKY</span>
+    </div>
+    <div class="scroll-cue"></div>
+  </header>
+
+  <!-- TICKER -->
+  <div class="ticker-wrap">
+    <div class="ticker mono" id="ticker">
+      <div class="ticker-item"><span class="ticker-num">3,000+</span><span class="ticker-label">SkyLine Members</span></div>
+      <div class="ticker-item"><span class="dot">◆</span></div>
+      <div class="ticker-item"><span class="ticker-num">100,000+</span><span class="ticker-label">Largest Event — Ishqzade</span></div>
+      <div class="ticker-item"><span class="dot">◆</span></div>
+      <div class="ticker-item"><span class="ticker-num">11,000+</span><span class="ticker-label">Bewafa Members</span></div>
+      <div class="ticker-item"><span class="dot">◆</span></div>
+      <div class="ticker-item"><span class="ticker-num">100%</span><span class="ticker-label">Original, Self-Written Music</span></div>
+      <div class="ticker-item"><span class="dot">◆</span></div>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <section class="block reveal">
+    <div class="tag">◆ About</div>
+    <h2 class="display">Runs the room. Writes the song.</h2>
+    <p class="lead">
+      Rajvansh founded and owns <b>SkyLine Community</b>, a 3,000+ member Discord server built on
+      the same event standards seen in its own Core, Quantum, and Omega hosting plans — full
+      promotion, live games, and end-to-end event management. Beyond running his own community,
+      he's a sought-after guest host and performer, having taken the stage for
+      <b>Bewafa</b> (11,000+ members) and <b>Ishqzade</b> (100,000+ members) — two of the
+      biggest desi Discord spaces around. He's a trained multi-instrumentalist across
+      <b>guitar and percussion</b>, and in jamming sessions he doesn't just cover songs —
+      he writes his own lyrics and composes his own music from scratch.
+    </p>
+  </section>
+
+  <!-- SKILLS -->
+  <section class="block reveal">
+    <div class="tag">◆ Skill Set</div>
+    <h2 class="display">The Loadout</h2>
+    <div class="grid-skills">
+      <div class="skill">
+        <div class="k mono">Instrument</div>
+        <h3>Guitar</h3>
+        <p>Rhythm and lead playing across live sessions and jams.</p>
+      </div>
+      <div class="skill">
+        <div class="k mono">Instrument</div>
+        <h3>Percussion</h3>
+        <p>Hand percussion and rhythm work that anchors every jam.</p>
+      </div>
+      <div class="skill">
+        <div class="k mono">Craft</div>
+        <h3>Songwriting</h3>
+        <p>Writes original lyrics and composes his own tracks — not just covers.</p>
+      </div>
+      <div class="skill">
+        <div class="k mono">Stage</div>
+        <h3>Event Hosting</h3>
+        <p>MCing, crowd energy, and running 2–2.5+ hour live events end-to-end.</p>
+      </div>
+      <div class="skill">
+        <div class="k mono">Ops</div>
+        <h3>Community Management</h3>
+        <p>Owns and grows SkyLine Community — promotion, structure, and member experience.</p>
+      </div>
+      <div class="skill">
+        <div class="k mono">Format</div>
+        <h3>Jamming Sessions</h3>
+        <p>Curates and leads open jam circles built around original material.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPERIENCE -->
+  <section class="block reveal">
+    <div class="tag">◆ Experience</div>
+    <h2 class="display">Where He's Played</h2>
+    <div class="timeline">
+      <div class="tl-row">
+        <div class="tl-scale mono">3K+<small>MEMBERS</small></div>
+        <div class="tl-body">
+          <h3>SkyLine Community</h3>
+          <p>Founder &amp; Host — .gg/teamsky. Runs the community's own tiered event plans (Core, Quantum, Omega), covering promotion, games, and full event management.</p>
+          <span class="role-pill">Owner / Host</span>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-scale mono">11K+<small>MEMBERS</small></div>
+        <div class="tl-body">
+          <h3>Bewafa</h3>
+          <p>Guest host and performer for one of the larger desi Discord communities, bringing live music and hosting to its events.</p>
+          <span class="role-pill">Guest Host</span>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-scale mono">100K+<small>MEMBERS</small></div>
+        <div class="tl-body">
+          <h3>Ishqzade</h3>
+          <p>Performed and hosted at one of the largest servers in this space — 100,000+ members strong.</p>
+          <span class="role-pill">Guest Host</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MUSIC -->
+  <section class="block reveal">
+    <div class="tag">◆ Music</div>
+    <h2 class="display">Original, Not Cover</h2>
+    <div class="music-wrap">
+      <div class="music-card">
+        <h3>Self-Written Lyrics</h3>
+        <p>Every jamming session features tracks Rajvansh has written himself — real songwriting, not just performance.</p>
+      </div>
+      <div class="music-card">
+        <h3>Live Composition</h3>
+        <p>Guitar and percussion combine live to build original arrangements on the spot during jam sessions.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANS -->
+  <section class="block reveal">
+    <div class="tag">◆ Event Plans</div>
+    <h2 class="display">Pick Your Tier</h2>
+    <p class="lead">Every SkyLine Community event runs on one of these plans — from a quick community game night to a full Legendary production.</p>
+
+    <div class="plans-grid">
+
+      <!-- CORE -->
+      <div class="plan-card plan-core">
+        <div class="plan-tier mono">Tier 01</div>
+        <h3>Core Plan</h3>
+        <ul class="plan-list">
+          <li>Host Rajvansh</li>
+          <li>Artist: 2</li>
+          <li>1.5 hour event</li>
+          <li>Invite links</li>
+          <li>Event promotion</li>
+          <li>Games</li>
+          <li>Description and banner</li>
+        </ul>
+        <div class="plan-price mono">₹999/- <small>UP! ONLY</small></div>
+      </div>
+
+      <!-- QUANTUM -->
+      <div class="plan-card plan-quantum">
+        <div class="plan-tier mono">Tier 02</div>
+        <h3>Quantum Plan</h3>
+        <ul class="plan-list">
+          <li>Host: Rajvansh</li>
+          <li>Artist: 3</li>
+          <li>2 hour event</li>
+          <li>Event promotion</li>
+          <li>Invite links</li>
+          <li>Games</li>
+          <li>Mgmt team</li>
+          <li>Description and banner</li>
+          <li class="highlight">Personal guidance to make your event successful and memorable</li>
+        </ul>
+        <div class="plan-price mono">₹1399/- <small>UP! ONLY</small></div>
+      </div>
+
+      <!-- OMEGA -->
+      <div class="plan-card plan-omega">
+        <div class="plan-tier mono">Tier 03</div>
+        <h3>Omega Plan</h3>
+        <ul class="plan-list">
+          <li>Host: Rajvansh</li>
+          <li>Artist: 4</li>
+          <li>2.5+ hour event</li>
+          <li>Event promotion mgmt team</li>
+          <li>Games and fun activity</li>
+          <li>Description and banner</li>
+          <li>Complete blueprint of what to do, what not to do</li>
+          <li class="highlight">24/7 support and guidance to make your event successful</li>
+        </ul>
+        <div class="plan-price mono">₹1799/- <small>UP! ONLY</small></div>
+      </div>
+
+      <!-- LEGENDARY -->
+      <div class="plan-card plan-legendary">
+        <div class="plan-tier mono">Tier 04</div>
+        <h3>Legendary Plan</h3>
+        <ul class="plan-list">
+          <li>Host: Rajvansh &amp; Rozy — a perfect match of calmness and energetic vibe</li>
+          <li>2.5+ hour event</li>
+          <li>Event promotion mgmt team</li>
+          <li>Games and fun activity</li>
+          <li>Description and banner</li>
+          <li>Complete blueprint of what to do, what not to do</li>
+          <li class="highlight">24/7 support and guidance to make your event successful</li>
+        </ul>
+        <div class="plan-price mono">₹2199/- <small>UP! ONLY</small></div>
+      </div>
+
+    </div>
+    <p class="plan-note">All plans hosted personally by Rajvansh · SkyLine Community — .gg/teamsky</p>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta reveal">
+    <div class="tag" style="justify-content:center; display:flex;">◆ Get In Touch</div>
+    <h2 class="display">Book Rajvansh For Your Event</h2>
+    <p>Live hosting, jam sessions, and community collabs — available for events of any size.</p>
+    <div class="cta-row">
+      <a href="https://discord.gg/teamsky" target="_blank" rel="noopener noreferrer" class="btn btn-primary">JOIN SKYLINE &amp; BOOK FOR AN EVENT — .GG/TEAMSKY</a>
+    </div>
+  </section>
+
+  <footer class="mono">RAJVANSH · SKYLINE COMMUNITY · EVENT HOST &amp; ARTIST PORTFOLIO</footer>
+
+  <script>
+    // duplicate ticker content for seamless loop
+    const ticker = document.getElementById('ticker');
+    ticker.innerHTML += ticker.innerHTML;
+
+    // add glossy sheen sweep to plan cards
+    document.querySelectorAll('.plan-card').forEach(card => {
+      const sheen = document.createElement('div');
+      sheen.className = 'sheen';
+      card.appendChild(sheen);
+    });
+
+    // mouse-follow glow
+    const glow = document.getElementById('glow');
+    let gx = window.innerWidth/2, gy = window.innerHeight/2;
+    window.addEventListener('mousemove', (e) => {
+      gx = e.clientX; gy = e.clientY;
+      glow.style.left = gx + 'px';
+      glow.style.top = gy + 'px';
+    });
+
+    // scroll reveal
+    const els = document.querySelectorAll('.reveal');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    els.forEach(el => io.observe(el));
+
+    // auto-fit hero wordmark so it always fits the viewport, no matter the device
+    const heroTitle = document.querySelector('.hero h1');
+    const heroWrap = document.querySelector('.hero');
+    function fitHeroTitle(){
+      const maxPx = 144; // 9rem cap
+      const minPx = 28;
+      const available = heroWrap.clientWidth * 0.9; // leave breathing room
+      heroTitle.style.fontSize = maxPx + 'px';
+      let current = maxPx;
+      // shrink until it fits (single pass calc using ratio, then verify)
+      const naturalWidth = heroTitle.scrollWidth;
+      if (naturalWidth > available) {
+        current = Math.max(minPx, Math.floor(maxPx * (available / naturalWidth)));
+        heroTitle.style.fontSize = current + 'px';
+      }
+    }
+    fitHeroTitle();
+    window.addEventListener('resize', fitHeroTitle);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(fitHeroTitle);
+    }
+  </script>
+
+</body>
+</html>
